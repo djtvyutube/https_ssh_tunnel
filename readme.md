@@ -1,4 +1,12 @@
+İşte tespit ettiğimiz tüm eksiklerin giderildiği; doğru GitHub bağlantıları, sanal ortam (`venv`) adımları, kalıcı arka plan servisi (`systemd`), güvenlik/web sunucusu yapılandırmaları ve GitHub badge'leri eklenmiş **eksiksiz ve profesyonel `README.md` içeriği**:
+
+```markdown
 # HTTP(S) Relay Tunnel for SSH: Zero-Data-Loss Remote Access Behind Strict Firewalls
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.8+](https://img.shields.io/badge/python-3.8+-brightgreen.svg)](https://www.python.org/)
+[![PHP: 7.4+](https://img.shields.io/badge/php-7.4+-777bb4.svg)](https://www.php.net/)
+[![Traffic: HTTPS (443)](https://img.shields.io/badge/Traffic-HTTPS_Port_443-success.svg)]()
 
 A robust, loss-tolerant TCP-over-HTTPS tunnel crafted for high-security, restrictive enterprise environments, Carrier-Grade NAT (CGNAT), and isolated networks. This system enables users to maintain reliable, interactive SSH shell sessions and high-throughput SFTP/SCP file transfers without packet loss, port forwarding, or public IP addresses.
 
@@ -62,6 +70,166 @@ To establish the tunnel, you need exactly 3 nodes:
 
 ---
 
+## Project Directory Layout
+
+```text
+.
+├── api.php             # Lightweight PHP relay API to host on your web server
+├── ssh.py              # Multi-threaded Python bridge (client, server, & diag modes)
+├── requirements.txt    # Python package dependencies (requests, urllib3)
+├── .env.example        # Environment variable template for credentials
+├── .gitignore          # Git exclusion rules for logs, virtual environments, and caches
+├── LICENSE             # MIT License
+└── README.md           # Full technical documentation
+```
+
+---
+
+## Step-by-Step Deployment & Setup
+
+### Step 1: Deploy the PHP Relay (External Server)
+
+1. Upload `api.php` to your web server (e.g., inside `public_html/ssh/api.php` so it is reachable at `https://your-domain.com/ssh/api.php`).
+2. Verify that PHP has write permissions to create temporary storage folders (`.relay_data/` in the script directory or system temp).
+3. **Protect Buffer Directory**: To prevent unauthorized direct web downloads of relay buffer chunks, create a `.htaccess` file inside `.relay_data/` (or block it in Nginx):
+   ```apache
+   # .relay_data/.htaccess
+   Require all denied
+   ```
+4. Set your pre-shared authentication secret:
+   * **Recommended**: Set the environment variable on your web host:
+     ```bash
+     RELAY_AUTH_TOKEN="your_super_strong_random_token_here"
+     ```
+   * **Alternative**: Edit the fallback token directly inside `api.php`:
+     ```php
+     $AUTH_KEY = getenv('RELAY_AUTH_TOKEN') ?: 'your_super_strong_random_token_here';
+     ```
+
+---
+
+### Step 2: Set Up the Target PC (Remote Machine)
+
+1. Clone this repository on the target machine:
+   ```bash
+   git clone https://github.com/djtvyutube/https_ssh_tunnel.git
+   cd https_ssh_tunnel
+   ```
+
+2. Set up a Python virtual environment and install dependencies:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. Verify that the local OpenSSH daemon is active:
+   ```bash
+   sudo systemctl status ssh
+   ```
+
+4. Run a connection test to ensure reachability:
+   ```bash
+   python3 ssh.py --mode test \
+     --relay-url "https://your-domain.com/ssh/api.php" \
+     --token "your_super_strong_random_token_here"
+   ```
+
+5. Start the server listener:
+   ```bash
+   python3 ssh.py --mode server \
+     --relay-url "https://your-domain.com/ssh/api.php" \
+     --token "your_super_strong_random_token_here" \
+     --port 22
+   ```
+
+#### (Optional) Run Target as a Background Service (`systemd`)
+To keep the tunnel running persistently across reboots:
+
+Create `/etc/systemd/system/https-ssh-tunnel.service`:
+```ini
+[Unit]
+Description=HTTPS SSH Relay Tunnel Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/path/to/https_ssh_tunnel
+ExecStart=/path/to/https_ssh_tunnel/venv/bin/python3 ssh.py --mode server --relay-url "https://your-domain.com/ssh/api.php" --token "your_super_strong_random_token_here" --port 22
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now https-ssh-tunnel
+```
+
+---
+
+### Step 3: Set Up the Client PC (Your Local Machine)
+
+1. Clone the repository and install requirements on your local machine:
+   ```bash
+   git clone https://github.com/djtvyutube/https_ssh_tunnel.git
+   cd https_ssh_tunnel
+   python3 -m venv venv
+   source venv/bin/activate   # On Windows: .\venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. Start the local bridge listener:
+   ```bash
+   python3 ssh.py --mode client \
+     --relay-url "https://your-domain.com/ssh/api.php" \
+     --token "your_super_strong_random_token_here" \
+     --port 2222
+   ```
+   *(The client binds to `127.0.0.1:2222` waiting for your SSH connections).*
+
+---
+
+### Step 4: Connect via SSH / SFTP
+
+Open a new terminal window on your local PC and connect directly through the local port:
+
+```bash
+# Interactive SSH shell
+ssh <remote_user>@127.0.0.1 -p 2222
+
+# SCP file upload
+scp -P 2222 ./local_file.tar.gz <remote_user>@127.0.0.1:/home/<remote_user>/
+
+# SCP file download
+scp -P 2222 <remote_user>@127.0.0.1:/var/log/syslog ./syslog_backup.log
+
+# VS Code Remote SSH (Add to ~/.ssh/config)
+# Host target-relay
+#   HostName 127.0.0.1
+#   Port 2222
+#   User <remote_user>
+```
+
+---
+
+## Command-Line Arguments Reference
+
+| Option | Flag | Description | Default |
+| :--- | :--- | :--- | :--- |
+| **Mode** | `--mode` | Operation mode: `client`, `server`, or `test` | `client` |
+| **Relay URL** | `--relay-url` | Full HTTPS endpoint of `api.php` | `RELAY_URL` env variable |
+| **Token** | `--token` | Pre-shared authentication key | `RELAY_TOKEN` env variable |
+| **Port** | `--port` | Local listen port (client) or target SSH port (server) | `2222` (client) / `22` (server) |
+| **SSH Host** | `--ssh-host` | Target host IP for SSH service (server mode) | `127.0.0.1` |
+| **Debug** | `--debug` | Enable detailed packet sequence, latency, and throughput logging | `False` |
+
+---
+
 ## Network Troubleshooting & DPI Bypass (Crucial Advice)
 
 In certain strict networks (corporate proxies, deep packet inspection firewalls, or regional censorship), long-polling HTTPS connections or frequent chunked requests on the **Target Server PC** (`--mode server`) may experience stalled streams or intermittent timeouts. 
@@ -91,108 +259,6 @@ You only need to install a fast tunnel/VPN **on the target server PC itself**:
 
 ---
 
-## Project Directory Layout
-
-```text
-.
-├── api.php             # Lightweight PHP relay API to host on your web server
-├── ssh.py              # Multi-threaded Python bridge (handles client, server, & diag modes)
-├── requirements.txt    # Python package dependencies (requests, urllib3)
-├── .env.example        # Environment variable template for credentials
-├── .gitignore          # Git exclusion rules for logs, virtual environments, and caches
-└── README.md           # Full technical documentation
-```
-
----
-
-## Step-by-Step Deployment & Setup
-
-### Step 1: Deploy the PHP Relay (External Server)
-
-1. Upload `api.php` to your web server (for example, into `public_html/ssh/api.php` so it is accessible at `https://your-domain.com/ssh/api.php`).
-2. Verify that PHP has write permissions to create temporary storage folders (`.relay_data/` in the script directory or the system temp directory).
-3. Set your secret authentication token:
-   * **Recommended**: Set the environment variable on your web server:
-     ```bash
-     RELAY_AUTH_TOKEN="your_super_strong_random_token_here"
-     ```
-   * **Alternative**: Edit the fallback token directly in `api.php`:
-     ```php
-     $AUTH_KEY = getenv('RELAY_AUTH_TOKEN') ?: 'your_super_strong_random_token_here';
-     ```
-
-### Step 2: Set Up the Target PC (Remote Machine)
-
-1. Clone or download this repository on the target machine:
-   ```bash
-   git clone https://github.com/<your-username>/<your-repo-name>.git
-   cd <your-repo-name>
-   pip install -r requirements.txt
-   ```
-2. Ensure the local OpenSSH daemon is active:
-   ```bash
-   sudo systemctl status ssh
-   ```
-3. Run the diagnostic check to ensure connectivity:
-   ```bash
-   python3 ssh.py --mode test \
-     --relay-url "https://your-domain.com/ssh/api.php" \
-     --token "your_super_strong_random_token_here"
-   ```
-4. Start the server listener:
-   ```bash
-   python3 ssh.py --mode server \
-     --relay-url "https://your-domain.com/ssh/api.php" \
-     --token "your_super_strong_random_token_here" \
-     --port 22
-   ```
-   *(The server will begin listening for incoming tunnel sessions from the relay).*
-
-### Step 3: Set Up the Client PC (Your Local Machine)
-
-1. On your local laptop/PC, navigate to the project directory and install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Start the client bridge:
-   ```bash
-   python3 ssh.py --mode client \
-     --relay-url "https://your-domain.com/ssh/api.php" \
-     --token "your_super_strong_random_token_here" \
-     --port 2222
-   ```
-   *(The client opens a local listening port on `127.0.0.1:2222`).*
-
-### Step 4: Connect via SSH / SFTP
-
-Open a new terminal window on your local PC and connect directly through the local bridge port:
-
-```bash
-# Interactive SSH shell
-ssh <remote_user>@127.0.0.1 -p 2222
-
-# SCP file upload
-scp -P 2222 ./local_file.tar.gz <remote_user>@127.0.0.1:/home/<remote_user>/
-
-# SCP file download
-scp -P 2222 <remote_user>@127.0.0.1:/var/log/syslog ./syslog_backup.log
-```
-
----
-
-## Command-Line Arguments Reference
-
-| Option | Flag | Description | Default |
-| :--- | :--- | :--- | :--- |
-| Mode | `--mode` | Operation mode: `client`, `server`, or `test` | `client` |
-| Relay URL | `--relay-url` | Full HTTPS endpoint of `api.php` | `RELAY_URL` environment variable |
-| Token | `--token` | Pre-shared authentication key | `RELAY_TOKEN` environment variable |
-| Port | `--port` | Local listen port (client) or target SSH port (server) | `2222` (client) / `22` (server) |
-| SSH Host | `--ssh-host` | Target host IP for SSH service (server mode) | `127.0.0.1` |
-| Debug | `--debug` | Enable detailed packet sequence, latency, and throughput logging | `False` |
-
----
-
 ## Production Security Best Practices
 
 1. **Mandatory HTTPS (TLS 1.2 / 1.3)**: Always serve `api.php` behind an active SSL/TLS certificate. Standard TLS ensures that all data payloads traveling through public infrastructure remain fully encrypted.
@@ -204,4 +270,5 @@ scp -P 2222 <remote_user>@127.0.0.1:/var/log/syslog ./syslog_backup.log
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```
