@@ -1,4 +1,3 @@
-İşte tespit ettiğimiz tüm eksiklerin giderildiği; doğru GitHub bağlantıları, sanal ortam (`venv`) adımları, kalıcı arka plan servisi (`systemd`), güvenlik/web sunucusu yapılandırmaları ve GitHub badge'leri eklenmiş **eksiksiz ve profesyonel `README.md` içeriği**:
 
 ```markdown
 # HTTP(S) Relay Tunnel for SSH: Zero-Data-Loss Remote Access Behind Strict Firewalls
