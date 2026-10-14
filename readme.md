@@ -1,5 +1,5 @@
-> [!TIP]  
-> **Türkçe dokümantasyon için [README_TR.md](README_TR.md) dosyasına göz atabilirsiniz.**
+[![Türkçe](https://shields.io)](README_TR.md)
+
 
 # HTTP(S) Relay Tunnel for SSH: Zero-Data-Loss Remote Access Behind Strict Firewalls
 
