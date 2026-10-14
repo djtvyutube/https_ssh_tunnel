@@ -1,3 +1,5 @@
+[![Türkçe Dokümantasyon](https://img.shields.io/badge/Dok%C3%BCmantasyon-T%C3%BCrk%C3%A7e%20%F0%9F%87%B9%F0%9F%87%B7-red?style=for-the-badge)](README_TR.md)
+
 # HTTP(S) Relay Tunnel for SSH: Zero-Data-Loss Remote Access Behind Strict Firewalls
 
 A robust, loss-tolerant TCP-over-HTTPS tunnel crafted for high-security, restrictive enterprise environments, Carrier-Grade NAT (CGNAT), and isolated networks. This system enables users to maintain reliable, interactive SSH shell sessions and high-throughput SFTP/SCP file transfers without packet loss, port forwarding, or public IP addresses.
