@@ -1,4 +1,5 @@
-[![Türkçe Dokümantasyon](https://img.shields.io/badge/Dok%C3%BCmantasyon-T%C3%BCrk%C3%A7e%20%F0%9F%87%B9%F0%9F%87%B7-red?style=for-the-badge)](README_TR.md)
+> [!NOTE]  
+> 🇹🇷 **Türkçe dokümantasyon için [README_TR.md](README_TR.md) dosyasına göz atabilirsiniz.**
 
 # HTTP(S) Relay Tunnel for SSH: Zero-Data-Loss Remote Access Behind Strict Firewalls
 
