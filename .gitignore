@@ -1,0 +1,18 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Secrets & local environment files
+.env
+.env.local
+*.key
+*.pem
+
+# Relay server storage directory
+.relay_data/
+ssh_relay_tunnels/
+
+# Logs & IDE configs
+*.log
+.vscode/
+.idea/
