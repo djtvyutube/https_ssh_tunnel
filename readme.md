@@ -102,6 +102,7 @@ You only need to install a fast tunnel/VPN **on the target server PC itself**:
 ├── .gitignore          # Git exclusion rules for logs, virtual environments, and caches
 ├── LICENSE             # MIT License file
 └── README.md           # Full technical documentation
+└── README_TR.md        # Türkçe teknik dokümantasyon
 ```
 
 ---
