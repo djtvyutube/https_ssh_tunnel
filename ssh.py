@@ -18,7 +18,7 @@ from urllib3.util.retry import Retry
 
 CONFIG = {
     # Public HTTPS URL of the PHP relay script
-    "RELAY_URL": os.environ.get("RELAY_URL", "https://youdomain.com"),
+    "RELAY_URL": os.environ.get("RELAY_URL", "https://your-domain.com"),
     # Shared secret authentication token between client, server, and relay
     "TOKEN": os.environ.get("RELAY_TOKEN", "YOUR_SECRET_TOKEN_HERE"),
     # Local port on client machine to listen for incoming SSH connections
